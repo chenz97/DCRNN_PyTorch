@@ -8,7 +8,7 @@ from torch.utils.tensorboard import SummaryWriter
 
 from lib import utils
 from model.pytorch.dcrnn_model import DCRNNModel
-from model.pytorch.loss import masked_mae_loss
+from model.pytorch.loss import masked_mae_loss, masked_rmse_loss, masked_mse_loss
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -25,7 +25,7 @@ class DCRNNSupervisor:
 
         # logging.
         self._log_dir = self._get_log_dir(kwargs)
-        self._writer = SummaryWriter('runs/' + self._log_dir)
+        self._writer = SummaryWriter(self._log_dir)
 
         log_level = self._kwargs.get('log_level', 'INFO')
         self._logger = utils.get_logger(self._log_dir, __name__, 'info.log', level=log_level)
@@ -57,6 +57,7 @@ class DCRNNSupervisor:
     @staticmethod
     def _get_log_dir(kwargs):
         log_dir = kwargs['train'].get('log_dir')
+        log_dir = os.path.join('runs', kwargs.get('base_dir'), log_dir)
         if log_dir is None:
             batch_size = kwargs['data'].get('batch_size')
             learning_rate = kwargs['train'].get('base_lr')
@@ -94,16 +95,17 @@ class DCRNNSupervisor:
         return 'ep%d.tar' % epoch
 
     def load_model(self):
-        self._setup_graph()
-        assert os.path.exists('models/ep%d.tar' % self._epoch_num), 'Weights at epoch %d not found' % self._epoch_num
-        checkpoint = torch.load('models/ep%d.tar' % self._epoch_num, map_location='cpu')
+        self._setup_graph()  # NOTE: creating dynamic graph (at model runtime)
+        load_path = os.path.join(self._log_dir, 'models/ep%d.tar' % self._epoch_num)
+        assert os.path.exists(load_path), 'Weights at epoch %d not found' % self._epoch_num
+        checkpoint = torch.load(load_path, map_location='cpu')
         self.dcrnn_model.load_state_dict(checkpoint['model_state_dict'])
         self._logger.info("Loaded model at {}".format(self._epoch_num))
 
     def _setup_graph(self):
+        # used for updating the dynamically created graph
         with torch.no_grad():
             self.dcrnn_model = self.dcrnn_model.eval()
-
             if self._dataset != 'pems_d7':
                 val_iterator = self._data['val_loader'].get_iterator()
             else:
@@ -202,15 +204,19 @@ class DCRNNSupervisor:
                         writer.writerow(record)
         self._logger.info('Test done')
 
-
-
     def _train(self, base_lr,
                steps, patience=50, epochs=100, lr_decay_ratio=0.1, log_every=1, save_model=1,
-               test_every_n_epochs=10, epsilon=1e-8, **kwargs):
+               test_every_n_epochs=10, epsilon=1e-8, momentum=0.9, **kwargs):
         # steps is used in learning rate - will see if need to use it?
         min_val_loss = float('inf')
         wait = 0
-        optimizer = torch.optim.Adam(self.dcrnn_model.parameters(), lr=base_lr, eps=epsilon)
+        optimizer_type = self._train_kwargs.get('optimizer', 'adam')
+        if optimizer_type == 'adam':
+            optimizer = torch.optim.Adam(self.dcrnn_model.parameters(), lr=base_lr, eps=epsilon)
+        elif optimizer_type == 'sgd':
+            optimizer = torch.optim.SGD(self.dcrnn_model.parameters(), lr=base_lr, momentum=momentum)
+        else:
+            raise NotImplementedError
 
         lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=steps,
                                                             gamma=lr_decay_ratio)
@@ -245,7 +251,12 @@ class DCRNNSupervisor:
                 if batches_seen == 0:
                     # this is a workaround to accommodate dynamically registered parameters in DCGRUCell
                     # TODO: since this is only for batches_seen=0, thus only exec once for the whole training, why must put it inside iteration
-                    optimizer = torch.optim.Adam(self.dcrnn_model.parameters(), lr=base_lr, eps=epsilon)
+                    if optimizer_type == 'adam':
+                        optimizer = torch.optim.Adam(self.dcrnn_model.parameters(), lr=base_lr, eps=epsilon)
+                    elif optimizer_type == 'sgd':
+                        optimizer = torch.optim.SGD(self.dcrnn_model.parameters(), lr=base_lr, momentum=momentum)
+                    else:
+                        raise NotImplementedError
 
                 loss = self._compute_loss(y, output)
 
@@ -273,7 +284,7 @@ class DCRNNSupervisor:
                                     batches_seen)
 
             if (epoch_num % log_every) == log_every - 1:
-                message = 'Epoch [{}/{}] ({}) train_mae: {:.4f}, val_mae: {:.4f}, lr: {:.6f}, ' \
+                message = 'Epoch [{}/{}] ({}) train_loss {:.4f}, val_loss: {:.4f}, lr: {:.6f}, ' \
                           '{:.1f}s'.format(epoch_num, epochs, batches_seen,
                                            np.mean(losses), val_loss, lr_scheduler.get_lr()[0],
                                            (end_time - start_time))
@@ -281,7 +292,7 @@ class DCRNNSupervisor:
 
             if (epoch_num % test_every_n_epochs) == test_every_n_epochs - 1:
                 test_loss, _ = self.evaluate(dataset='test', batches_seen=batches_seen)
-                message = 'Epoch [{}/{}] ({}) train_mae: {:.4f}, test_mae: {:.4f},  lr: {:.6f}, ' \
+                message = 'Epoch [{}/{}] ({}) train_loss: {:.4f}, test_loss: {:.4f},  lr: {:.6f}, ' \
                           '{:.1f}s'.format(epoch_num, epochs, batches_seen,
                                            np.mean(losses), test_loss, lr_scheduler.get_lr()[0],
                                            (end_time - start_time))
@@ -372,4 +383,13 @@ class DCRNNSupervisor:
     def _compute_loss(self, y_true, y_predicted):
         y_true = self.standard_scaler.inverse_transform(y_true)
         y_predicted = self.standard_scaler.inverse_transform(y_predicted)
-        return masked_mae_loss(y_predicted, y_true)
+        loss_type = self._train_kwargs.get('loss', 'mae')
+        if loss_type == 'mae':
+            return masked_mae_loss(y_predicted, y_true)
+        elif loss_type == 'rmse':
+            return masked_rmse_loss(y_predicted, y_true)
+        elif loss_type == 'mse':
+            return masked_mse_loss(y_predicted, y_true)
+        else:
+            raise NotImplementedError
+

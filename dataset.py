@@ -33,20 +33,23 @@ class PeMSD7(Dataset):
             elif subset == 'val':
                 if int(file.split('.')[0]) % 4 != 0:
                     continue
-            data = genfromtxt(os.path.join(root, file), delimiter=',')
-            time_gen = np.tile(np.linspace(0., 1., num=data.shape[0], endpoint=False), (data.shape[1], 1)).T
-            data = np.stack((data, time_gen), axis=2)
+            data = genfromtxt(os.path.join(root, file), delimiter=',')  # (288, #station) / (12, #station)
             all_data.append(data)
             self.file_idx.append(int(file.split('.')[0]))
-        self.data = np.stack(all_data)  # (#file, 288, #station)
+        self.data = np.stack(all_data)  # (#file, 288/12, #station)
+
+        num_time_intervals = 288
+        time_gen = np.tile(np.linspace(0., 1., num=num_time_intervals, endpoint=False),
+                           (self.data.shape[2], 1)).T  # (288, #station)
+        self.time_gen = torch.tensor(time_gen[:12], dtype=torch.float32)
 
     def _normalize(self):
         if self.mean == 0.:
-            self.mean = self.data[..., 0].mean()
+            self.mean = self.data.mean()
         if self.std == 0.:
-            self.std = self.data[..., 0].std()
+            self.std = self.data.std()
         self.scaler = StandardScaler(mean=self.mean, std=self.std)
-        self.data[..., 0] = self.scaler.transform(self.data[..., 0])
+        self.data = self.scaler.transform(self.data)
         self.data = torch.tensor(self.data, dtype=torch.float32)
 
     def __len__(self):
@@ -56,15 +59,19 @@ class PeMSD7(Dataset):
             return self.data.shape[0]
 
     def __getitem__(self, idx):
-        # (12, #station, 2)
+        # get (12, #station, 2)
         if self.subset != 'test':
             sample_per_file = self.data.shape[1] - 23
             ix, iy = int(idx / sample_per_file), int(idx % sample_per_file)
             x = self.data[ix, iy : iy + 12]
             y = self.data[ix, iy + 12 : iy + 24]
+            x = torch.stack((x, self.time_gen), dim=2)
+            y = torch.stack((y, self.time_gen), dim=2)
             return x, y
         else:
-            return self.data[idx], self.file_idx[idx]
+            x = self.data[idx]
+            x = torch.stack((x, self.time_gen), dim=2)
+            return x, self.file_idx[idx]
 
 if __name__ == '__main__':
     dataset = PeMSD7('data/PEMS-D7', 'train')

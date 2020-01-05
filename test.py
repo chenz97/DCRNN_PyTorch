@@ -6,7 +6,7 @@ import os
 import argparse
 import yaml
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "2"  # NOTE: do so before import torch
+os.environ["CUDA_VISIBLE_DEVICES"] = "3"  # NOTE: do so before import torch
 
 from lib.utils import load_graph_data
 from model.pytorch.dcrnn_supervisor import DCRNNSupervisor
