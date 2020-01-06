@@ -3,6 +3,7 @@ from __future__ import division
 from __future__ import print_function
 
 import argparse
+import math
 import numpy as np
 import pandas as pd
 import pickle
@@ -33,6 +34,7 @@ def get_adjacency_matrix(distance_df, sensor_ids, normalized_k=0.1):
     # Calculates the standard deviation as theta.
     distances = dist_mx[~np.isinf(dist_mx)].flatten()
     std = distances.std()
+    # std = math.sqrt(10)  # TODO: fixed std value according to (Zhu, 2018)
     adj_mx = np.exp(-np.square(dist_mx / std))
     # Make the adjacent matrix symmetric by taking the max.
     # adj_mx = np.maximum.reduce([adj_mx, adj_mx.T])

@@ -3,14 +3,14 @@ base_dir: pems_d7
 log_level: INFO
 dataset: pems_d7
 data:
-  batch_size: 64
+  batch_size: 32
   dataset_dir: data/PEMS-D7
-  test_batch_size: 64
-  val_batch_size: 64
+  test_batch_size: 32
+  val_batch_size: 32
   graph_pkl_filename: data/sensor_graph/adj_mx_d7.pkl
 
 model:
-  cl_decay_steps: 2000
+  cl_decay_steps: 2000  # TODO: should be adjusted according to batch size, default 2000 vs bs64, when bs increase, it should decrease
   filter_type: dual_random_walk
   horizon: 12
   input_dim: 2  # TODO: if we want to use input_dim=2, we should assign only ordering to training data
@@ -40,4 +40,4 @@ train:
   patience: 50
   steps: [30, 50, 70, 90]
   test_every_n_epochs: 10
-  log_dir: adam_mse_lr001_ep120_lr_step_30_50_70_90
+  log_dir: adam_mse_no_val_cl2000_ep120_lr_step_30_50_70_90

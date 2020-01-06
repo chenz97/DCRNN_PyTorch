@@ -273,8 +273,8 @@ class DCRNNSupervisor:
                 optimizer.step()
             self._logger.info("epoch complete")
             lr_scheduler.step()
-            self._logger.info("evaluating now!")
 
+            self._logger.info("evaluating now!")
             val_loss, _ = self.evaluate(dataset='val', batches_seen=batches_seen)
 
             end_time = time.time()
@@ -290,13 +290,20 @@ class DCRNNSupervisor:
                                            (end_time - start_time))
                 self._logger.info(message)
 
-            if (epoch_num % test_every_n_epochs) == test_every_n_epochs - 1:
-                test_loss, _ = self.evaluate(dataset='test', batches_seen=batches_seen)
-                message = 'Epoch [{}/{}] ({}) train_loss: {:.4f}, test_loss: {:.4f},  lr: {:.6f}, ' \
-                          '{:.1f}s'.format(epoch_num, epochs, batches_seen,
-                                           np.mean(losses), test_loss, lr_scheduler.get_lr()[0],
-                                           (end_time - start_time))
-                self._logger.info(message)
+            # if (epoch_num % log_every) == log_every - 1:
+            #     message = 'Epoch [{}/{}] ({}) train_loss {:.4f}, lr: {:.6f}, ' \
+            #               '{:.1f}s'.format(epoch_num, epochs, batches_seen,
+            #                                np.mean(losses), lr_scheduler.get_lr()[0],
+            #                                (end_time - start_time))
+            #     self._logger.info(message)
+
+            # if (epoch_num % test_every_n_epochs) == test_every_n_epochs - 1:
+            #     test_loss, _ = self.evaluate(dataset='test', batches_seen=batches_seen)
+            #     message = 'Epoch [{}/{}] ({}) train_loss: {:.4f}, test_loss: {:.4f},  lr: {:.6f}, ' \
+            #               '{:.1f}s'.format(epoch_num, epochs, batches_seen,
+            #                                np.mean(losses), test_loss, lr_scheduler.get_lr()[0],
+            #                                (end_time - start_time))
+            #     self._logger.info(message)
 
             if val_loss < min_val_loss:
                 wait = 0
@@ -306,6 +313,9 @@ class DCRNNSupervisor:
                         'Val loss decrease from {:.4f} to {:.4f}, '
                         'saving to {}'.format(min_val_loss, val_loss, model_file_name))
                 min_val_loss = val_loss
+
+            # if save_model and epoch_num % 5 == 0:
+            #     model_file_name = self.save_model(epoch_num)
 
             elif val_loss >= min_val_loss:
                 wait += 1
@@ -390,6 +400,8 @@ class DCRNNSupervisor:
             return masked_rmse_loss(y_predicted, y_true)
         elif loss_type == 'mse':
             return masked_mse_loss(y_predicted, y_true)
+        elif loss_type == 'mixed':
+            return (masked_mse_loss(y_predicted, y_true) + masked_mae_loss(y_predicted, y_true)) / 2
         else:
             raise NotImplementedError
 
