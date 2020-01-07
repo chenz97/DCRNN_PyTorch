@@ -10,7 +10,7 @@ data:
   graph_pkl_filename: data/sensor_graph/adj_mx_d7.pkl
 
 model:
-  cl_decay_steps: 2000  # TODO: should be adjusted according to batch size, default 2000 vs bs64, when bs increase, it should decrease
+  cl_decay_steps: 1000  # TODO: should be adjusted according to #batch, when #batch increase, it should increase
   filter_type: dual_random_walk
   horizon: 12
   input_dim: 2  # TODO: if we want to use input_dim=2, we should assign only ordering to training data
@@ -27,7 +27,7 @@ train:
   loss: mse
   base_lr: 0.001
   dropout: 0
-  epoch: 0
+  epoch: 64
   epochs: 120
   epsilon: 1.0e-3
   momentum: 0.9
@@ -40,4 +40,4 @@ train:
   patience: 50
   steps: [30, 50, 70, 90]
   test_every_n_epochs: 10
-  log_dir: adam_mse_no_val_cl2000_ep120_lr_step_30_50_70_90
+  log_dir: adam_mse_new_split

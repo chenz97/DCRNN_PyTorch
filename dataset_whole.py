@@ -42,7 +42,8 @@ class PeMSD7(Dataset):
                     if i % 5 == 0:
                         idx.append(i)
             self.data = np.stack([data[i] for i in idx])
-            self.data = data
+
+            # self.data = data
 
         num_time_intervals = 288
         time_gen = np.tile(np.linspace(0., 1., num=num_time_intervals, endpoint=False),
@@ -81,6 +82,5 @@ class PeMSD7(Dataset):
             return x, self.file_idx[idx]
 
 if __name__ == '__main__':
-    dataset = PeMSD7('data/PEMS-D7', 'train')
+    dataset = PeMSD7('data/PEMS-D7', 'val')
     print(len(dataset))
-    print(dataset[599][0].shape)

@@ -28,10 +28,10 @@ class PeMSD7(Dataset):
         for file in os.listdir(root):
             assert os.path.isfile(os.path.join(root, file))
             if subset == 'train':
-                if int(file.split('.')[0]) % 4 == 0:  # used for validation
+                if int(file.split('.')[0]) % 5 == 0:  # used for validation
                     continue
             elif subset == 'val':
-                if int(file.split('.')[0]) % 4 != 0:
+                if int(file.split('.')[0]) % 5 != 0:
                     continue
             data = genfromtxt(os.path.join(root, file), delimiter=',')  # (288, #station) / (12, #station)
             all_data.append(data)
