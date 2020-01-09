@@ -24,13 +24,14 @@ model:
   use_curriculum_learning: true
 
 train:
-  loss: mse
+  loss: mixed
   base_lr: 0.001
   dropout: 0
-  epoch: 64
+  epoch: 0
   epochs: 120
   epsilon: 1.0e-3
   momentum: 0.9
+  weight_dacay: 0
   global_step: 0
   lr_decay_ratio: 0.1
   max_grad_norm: 5
@@ -40,4 +41,4 @@ train:
   patience: 50
   steps: [30, 50, 70, 90]
   test_every_n_epochs: 10
-  log_dir: adam_mse_new_split
+  log_dir: adam_mixed_41split

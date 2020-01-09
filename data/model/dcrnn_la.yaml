@@ -1,5 +1,5 @@
 ---
-base_dir: data/model
+base_dir: la
 log_level: INFO
 dataset: la
 data:

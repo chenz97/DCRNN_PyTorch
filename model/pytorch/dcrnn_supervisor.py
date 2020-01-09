@@ -206,15 +206,15 @@ class DCRNNSupervisor:
 
     def _train(self, base_lr,
                steps, patience=50, epochs=100, lr_decay_ratio=0.1, log_every=1, save_model=1,
-               test_every_n_epochs=10, epsilon=1e-8, momentum=0.9, **kwargs):
+               test_every_n_epochs=10, epsilon=1e-8, momentum=0.9, weight_decay=0, **kwargs):
         # steps is used in learning rate - will see if need to use it?
         min_val_loss = float('inf')
         wait = 0
         optimizer_type = self._train_kwargs.get('optimizer', 'adam')
         if optimizer_type == 'adam':
-            optimizer = torch.optim.Adam(self.dcrnn_model.parameters(), lr=base_lr, eps=epsilon)
+            optimizer = torch.optim.Adam(self.dcrnn_model.parameters(), lr=base_lr, eps=epsilon, weight_decay=weight_decay)
         elif optimizer_type == 'sgd':
-            optimizer = torch.optim.SGD(self.dcrnn_model.parameters(), lr=base_lr, momentum=momentum)
+            optimizer = torch.optim.SGD(self.dcrnn_model.parameters(), lr=base_lr, momentum=momentum, weight_decay=weight_decay)
         else:
             raise NotImplementedError
 
@@ -250,11 +250,10 @@ class DCRNNSupervisor:
 
                 if batches_seen == 0:
                     # this is a workaround to accommodate dynamically registered parameters in DCGRUCell
-                    # TODO: since this is only for batches_seen=0, thus only exec once for the whole training, why must put it inside iteration
                     if optimizer_type == 'adam':
-                        optimizer = torch.optim.Adam(self.dcrnn_model.parameters(), lr=base_lr, eps=epsilon)
+                        optimizer = torch.optim.Adam(self.dcrnn_model.parameters(), lr=base_lr, eps=epsilon, weight_decay=weight_decay)
                     elif optimizer_type == 'sgd':
-                        optimizer = torch.optim.SGD(self.dcrnn_model.parameters(), lr=base_lr, momentum=momentum)
+                        optimizer = torch.optim.SGD(self.dcrnn_model.parameters(), lr=base_lr, momentum=momentum, weight_decay=weight_decay)
                     else:
                         raise NotImplementedError
 
@@ -313,15 +312,16 @@ class DCRNNSupervisor:
                         'Val loss decrease from {:.4f} to {:.4f}, '
                         'saving to {}'.format(min_val_loss, val_loss, model_file_name))
                 min_val_loss = val_loss
-
-            # if save_model and epoch_num % 5 == 0:
-            #     model_file_name = self.save_model(epoch_num)
-
             elif val_loss >= min_val_loss:
                 wait += 1
                 if wait == patience:
                     self._logger.warning('Early stopping at epoch: %d' % epoch_num)
                     break
+
+            if save_model and (epoch_num % 10 == 0 or epoch_num == epochs - 1):
+                model_file_name = self.save_model(epoch_num)
+
+            # model_file_name = self.save_model(epoch_num)
 
     def _prepare_data(self, x, y):
         x, y = self._get_x_y(x, y)
