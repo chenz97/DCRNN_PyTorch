@@ -24,7 +24,7 @@ model:
   use_curriculum_learning: true
 
 train:
-  loss: mixed
+  loss: mse
   base_lr: 0.001
   dropout: 0
   epoch: 0
@@ -39,6 +39,6 @@ train:
   min_learning_rate: 2.0e-06
   optimizer: adam
   patience: 50
-  steps: [30, 50, 70, 90]
+  steps: [20, 40, 60 ,80]
   test_every_n_epochs: 10
-  log_dir: adam_mixed_41split
+  log_dir: adam_mse_2468

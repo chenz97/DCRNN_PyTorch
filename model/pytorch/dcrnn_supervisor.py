@@ -8,7 +8,7 @@ from torch.utils.tensorboard import SummaryWriter
 
 from lib import utils
 from model.pytorch.dcrnn_model import DCRNNModel
-from model.pytorch.loss import masked_mae_loss, masked_rmse_loss, masked_mse_loss
+from model.pytorch.loss import masked_mae_loss, masked_rmse_loss, masked_mse_loss, mixed_mae_mse_loss
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -401,7 +401,8 @@ class DCRNNSupervisor:
         elif loss_type == 'mse':
             return masked_mse_loss(y_predicted, y_true)
         elif loss_type == 'mixed':
-            return (masked_mse_loss(y_predicted, y_true) + masked_mae_loss(y_predicted, y_true)) / 2
+            # return (masked_mse_loss(y_predicted, y_true) + masked_mae_loss(y_predicted, y_true)) / 2
+            return mixed_mae_mse_loss(y_predicted, y_true)
         else:
             raise NotImplementedError
 
