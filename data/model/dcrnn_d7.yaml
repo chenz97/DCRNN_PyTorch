@@ -11,8 +11,9 @@ data:
 
 model:
   cl_decay_steps: 1000  # TODO: should be adjusted according to #batch, when #batch increase, it should increase
+  # TODO: what about 1250?
   filter_type: dual_random_walk
-  horizon: 12
+  horizon: 12  # set output length
   input_dim: 2  # TODO: if we want to use input_dim=2, we should assign only ordering to training data
   l1_decay: 0
   max_diffusion_step: 2
@@ -39,6 +40,6 @@ train:
   min_learning_rate: 2.0e-06
   optimizer: adam
   patience: 50
-  steps: [20, 40, 60 ,80]
+  steps: [30, 50, 70, 90]
   test_every_n_epochs: 10
-  log_dir: adam_mse_2468
+  log_dir: adam_mse_retrain

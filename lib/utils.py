@@ -182,13 +182,13 @@ def load_dataset(dataset_dir, batch_size, test_batch_size=None, **kwargs):
 
     return data
 
-def load_dataset_d7(dataset_dir, batch_size, test_batch_size, **kwargs):
+def load_dataset_d7(dataset_dir, batch_size, test_batch_size, seq_len, horizon, **kwargs):
     data = {}
-    data['train'] = PeMSD7(dataset_dir, 'train')
+    data['train'] = PeMSD7(dataset_dir, 'train', seq_len=seq_len, horizon=horizon)
     mean = data['train'].mean
     std = data['train'].std
-    data['val'] = PeMSD7(dataset_dir, 'val', mean, std)
-    data['test'] = PeMSD7(dataset_dir, 'test', mean, std)
+    data['val'] = PeMSD7(dataset_dir, 'val', mean, std, seq_len, horizon)
+    data['test'] = PeMSD7(dataset_dir, 'test', mean, std, seq_len, horizon)
 
     data['train_loader'] = TorchDataLoader(data['train'], batch_size=batch_size, shuffle=True)
     data['train_loader'].num_batch = len(data['train_loader'])

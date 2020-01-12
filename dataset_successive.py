@@ -40,11 +40,12 @@ class PeMSD7(Dataset):
             data = genfromtxt(os.path.join(root, file), delimiter=',')  # (288, #station) / (12, #station)
             all_data.append(data)
             self.file_idx.append(int(file.split('.')[0]))
-        self.data = np.stack(all_data)  # (#file, 288/12, #station)
+        # self.data = np.stack(all_data)  # (#file, 288, #station) / (#file, 12, #station)
+        self.data = np.concatenate(all_data)  # (#file * 288, #station) / (#file * 12, #station)
 
         num_time_intervals = 288
         time_gen = np.tile(np.linspace(0., 1., num=num_time_intervals, endpoint=False),
-                           (self.data.shape[2], 1)).T  # (288, #station)
+                           (self.data.shape[1], 1)).T  # (288, #station)
         self.time_gen = torch.tensor(time_gen[:self.seq_len], dtype=torch.float32)
         self.time_gen_y = torch.tensor(time_gen[:self.horizon], dtype=torch.float32)  # NOTE: not used in fact
         # self.time_gen_scale = torch.tensor(time_gen[:24:2], dtype=torch.float32)
@@ -60,47 +61,23 @@ class PeMSD7(Dataset):
 
     def __len__(self):
         if self.subset != 'test':
-            # return self.data.shape[0] * ((self.data.shape[1] - 23) + (self.data.shape[1] - 47))  # NOTE: two scale
-            return self.data.shape[0] * (self.data.shape[1] - (self.seq_len + self.horizon - 1))
-            # return self.data.shape[0] * (self.data.shape[1] - 23) * 2
+            return self.data.shape[0] - (self.seq_len + self.horizon - 1)
         else:
-            return self.data.shape[0]
+            return int(self.data.shape[0] / self.seq_len)
 
     def __getitem__(self, idx):
         # get (12, #station, 2)
         if self.subset != 'test':
-            sample_per_file = self.data.shape[1] - (self.seq_len + self.horizon - 1)
-            # sample_per_file = (self.data.shape[1] - 23) + (self.data.shape[1] - 47)
-            # sample_per_file = (self.data.shape[1] - 23) * 2
-
-            ix, iy = int(idx / sample_per_file), int(idx % sample_per_file)
-            # if iy < self.data.shape[1] - 23:
-            x = self.data[ix, iy : iy + self.seq_len]
-            y = self.data[ix, iy + self.seq_len : iy + self.seq_len + self.horizon]
+            x = self.data[idx: idx + self.seq_len]
+            y = self.data[idx + self.seq_len : idx + self.seq_len + self.horizon]
             x = torch.stack((x, self.time_gen), dim=2)
             y = torch.stack((y, self.time_gen_y), dim=2)
-            # else:
-            #     iy -= self.data.shape[1] - 23
-            #     inv_idx_x = torch.arange(iy + 11, iy - 1, -1).long()
-            #     inv_idx_y = torch.arange(iy + 23, iy + 11, -1).long()
-            #     inv_idx_time = torch.arange(self.time_gen.shape[0] - 1, -1, -1).long()
-            #     x = self.data[ix, inv_idx_x]
-            #     y = self.data[ix, inv_idx_y]
-            #     x = torch.stack((x, self.time_gen[inv_idx_time]), dim=2)
-            #     y = torch.stack((y, self.time_gen[inv_idx_time]), dim=2)
-            # else:
-            #     iy -= self.data.shape[1] - 23
-            #     x = self.data[ix, iy : iy + 24 : 2]
-            #     y = self.data[ix, iy + 24 : iy + 48 : 2]
-            #     x = torch.stack((x, self.time_gen_scale), dim=2)
-            #     y = torch.stack((y, self.time_gen_scale), dim=2)
             return x, y
         else:
-            x = self.data[idx]
+            x = self.data[idx * self.seq_len : (idx + 1) * self.seq_len]
             x = torch.stack((x, self.time_gen), dim=2)
             return x, self.file_idx[idx]
 
 if __name__ == '__main__':
     dataset = PeMSD7('data/PEMS-D7', 'train')
     print(len(dataset))
-    print(dataset[599][0].shape)
