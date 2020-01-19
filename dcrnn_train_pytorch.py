@@ -15,6 +15,7 @@ from model.pytorch.dcrnn_supervisor import DCRNNSupervisor
 def main(args):
     with open(args.config_filename) as f:
         supervisor_config = yaml.load(f)
+        print(supervisor_config)
         supervisor_config['data']['seq_len'] = supervisor_config['model'].get('seq_len')
         supervisor_config['data']['horizon'] = supervisor_config['model'].get('horizon')
 

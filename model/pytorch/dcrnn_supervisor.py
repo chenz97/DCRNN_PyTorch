@@ -149,7 +149,9 @@ class DCRNNSupervisor:
 
             mean_loss = np.mean(losses)
 
-            self._writer.add_scalar('{} loss'.format(dataset), mean_loss, batches_seen)
+            self._writer.add_scalar('Loss/val', mean_loss, batches_seen)
+            # self._writer.add_scalar('val loss', mean_loss, batches_seen)
+
 
             y_preds = np.concatenate(y_preds, axis=1)
             y_truths = np.concatenate(y_truths, axis=1)  # concatenate on batch dimension
@@ -273,14 +275,20 @@ class DCRNNSupervisor:
             self._logger.info("epoch complete")
             lr_scheduler.step()
 
+            # val_loss = 0.
+
             self._logger.info("evaluating now!")
             val_loss, _ = self.evaluate(dataset='val', batches_seen=batches_seen)
 
             end_time = time.time()
 
-            self._writer.add_scalar('training loss',
+            self._writer.add_scalar('Loss/train',
                                     np.mean(losses),
                                     batches_seen)
+            # self._writer.add_scalar('training loss',
+            #                         np.mean(losses),
+            #                         batches_seen)
+
 
             if (epoch_num % log_every) == log_every - 1:
                 message = 'Epoch [{}/{}] ({}) train_loss {:.4f}, val_loss: {:.4f}, lr: {:.6f}, ' \
@@ -288,21 +296,6 @@ class DCRNNSupervisor:
                                            np.mean(losses), val_loss, lr_scheduler.get_lr()[0],
                                            (end_time - start_time))
                 self._logger.info(message)
-
-            # if (epoch_num % log_every) == log_every - 1:
-            #     message = 'Epoch [{}/{}] ({}) train_loss {:.4f}, lr: {:.6f}, ' \
-            #               '{:.1f}s'.format(epoch_num, epochs, batches_seen,
-            #                                np.mean(losses), lr_scheduler.get_lr()[0],
-            #                                (end_time - start_time))
-            #     self._logger.info(message)
-
-            # if (epoch_num % test_every_n_epochs) == test_every_n_epochs - 1:
-            #     test_loss, _ = self.evaluate(dataset='test', batches_seen=batches_seen)
-            #     message = 'Epoch [{}/{}] ({}) train_loss: {:.4f}, test_loss: {:.4f},  lr: {:.6f}, ' \
-            #               '{:.1f}s'.format(epoch_num, epochs, batches_seen,
-            #                                np.mean(losses), test_loss, lr_scheduler.get_lr()[0],
-            #                                (end_time - start_time))
-            #     self._logger.info(message)
 
             if val_loss < min_val_loss:
                 wait = 0

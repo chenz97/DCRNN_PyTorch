@@ -12,4 +12,4 @@ def gen_dist_file(file, out_file):
                 writer.writerow([i, j, matrix[i][j]])
 
 if __name__ == '__main__':
-    gen_dist_file('distance.csv', 'distances_d7.csv')
+    gen_dist_file('distance.csv', '../data/sensor_graph/distances_d7.csv')

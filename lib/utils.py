@@ -11,6 +11,8 @@ from torch.utils.data import DataLoader as TorchDataLoader
 
 from lib.misc import StandardScaler
 from dataset import PeMSD7
+# from dataset_successive import PeMSD7
+
 
 class DataLoader(object):
     def __init__(self, xs, ys, batch_size, pad_with_last_sample=True, shuffle=False):

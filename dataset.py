@@ -62,7 +62,7 @@ class PeMSD7(Dataset):
         if self.subset != 'test':
             # return self.data.shape[0] * ((self.data.shape[1] - 23) + (self.data.shape[1] - 47))  # NOTE: two scale
             return self.data.shape[0] * (self.data.shape[1] - (self.seq_len + self.horizon - 1))
-            # return self.data.shape[0] * (self.data.shape[1] - 23) * 2
+            # return self.data.shape[0] * (self.data.shape[1] - 23) * 2  # NOTE: reverse
         else:
             return self.data.shape[0]
 

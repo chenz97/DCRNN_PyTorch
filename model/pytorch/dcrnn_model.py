@@ -20,7 +20,8 @@ class Seq2SeqAttrs:
         self.num_nodes = int(model_kwargs.get('num_nodes', 1))
         self.num_rnn_layers = int(model_kwargs.get('num_rnn_layers', 1))
         self.rnn_units = int(model_kwargs.get('rnn_units'))
-        self.hidden_state_size = self.num_nodes * self.rnn_units
+        self.hidden_state_size = self.num_nodes * self.rnn_units  # will be reshaped to (num_nodes, rnn_units)
+        # hidden state should have the same spatial size as input, but with different channels (rnn_units)
 
 
 class EncoderModel(nn.Module, Seq2SeqAttrs):
@@ -145,6 +146,8 @@ class DCRNNModel(nn.Module, Seq2SeqAttrs):
                 c = np.random.uniform(0, 1)
                 if c < self._compute_sampling_threshold(batches_seen):
                     decoder_input = labels[t]
+                # c = self._compute_sampling_threshold(batches_seen)
+                # decoder_input = decoder_input * (1 - c) + labels[t] * c  # NOTE: using linear combination
         outputs = torch.stack(outputs)
         return outputs
 
