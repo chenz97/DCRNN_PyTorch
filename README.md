@@ -2,7 +2,7 @@
 
 ![Diffusion Convolutional Recurrent Neural Network](figures/model_architecture.jpg "Model Architecture")
 
-This is a PyTorch implementation of Diffusion Convolutional Recurrent Neural Network for the traffic prediction project of Introduction to Data Science, 2019 fall at PKU. This repo is based on the [DCRNN_PyTorch](https://github.com/chnsh/DCRNN_PyTorch) project.
+This is a PyTorch implementation of Diffusion Convolutional Recurrent Neural Network for the traffic prediction project of Introduction to Data Science, 2019 fall of PKU. This repo. is based on the [DCRNN_PyTorch](https://github.com/chnsh/DCRNN_PyTorch) repo.
 
 
 ## Requirements
@@ -50,7 +50,15 @@ python -m scripts.gen_adj_mx  --sensor_ids_filename=data/sensor_graph/graph_sens
 python dcrnn_train_pytorch.py --config_filename=data/model/dcrnn_d7.yaml
 ```
 
-There is a chance that the training loss will explode, the temporary workaround is to restart from the last saved model before the explosion, or to decrease the learning rate earlier in the learning rate schedule. 
+There is a chance that the training loss will explode when the learning rate is relatively large (e.g. 0.01), the temporary workaround is to restart from the last saved model before the explosion, or to decrease the learning rate earlier in the learning rate schedule. 
+
+## Model Testing
+
+```bash
+python test.py --config_filename=data/model/dcrnn_d7.yaml --epoch=119 --log_dir=adam_mse
+```
+
+
 
 ## Citation
 
